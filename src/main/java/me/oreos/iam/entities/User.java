@@ -48,11 +48,17 @@ public class User extends MyBaseEntity<Integer> {
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
+    @JsonIgnore
+    @ToString.Exclude
+    @Builder.Default
     @OneToMany(mappedBy = "user")
-    private List<UserGroup> userGroups;
+    private List<UserGroup> userGroups = new ArrayList<>();
 
+    @JsonIgnore
+    @ToString.Exclude
+    @Builder.Default
     @OneToMany(mappedBy = "user")
-    private List<Token> tokens;
+    private List<Token> tokens = new ArrayList<>();
 
     @JsonIgnore
     @ToString.Exclude

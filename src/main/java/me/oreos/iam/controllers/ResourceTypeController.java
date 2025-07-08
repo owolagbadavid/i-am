@@ -8,17 +8,17 @@ import org.wakanda.framework.controller.BaseQueryController;
 import org.wakanda.framework.response.helper.ResponseHelper;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
-import me.oreos.iam.services.ActionService;
+import me.oreos.iam.services.ResourceTypeService;
 
-@Tag(name = "Action", description = "Operations related to actions in the IAM system")
+@Tag(name = "ResourceType", description = "Operations related to resource types in the IAM system")
 @RestController
 @Controller
 @ResponseBody
-@RequestMapping(value = "/api/v1/actions"
+@RequestMapping(value = "/api/v1/resource-types"
 // , consumes = { "application/json", "application/org.wakanda.fw-v1+json" }, produces = { "application/json", "application/org.wakanda.fw-v1+json" }
 )
-public class ActionController extends BaseQueryController<me.oreos.iam.entities.Action, Integer> {
-    public ActionController(ActionService actionService, ResponseHelper<me.oreos.iam.entities.Action> responseHelper) {
-        super(actionService, responseHelper);
+public class ResourceTypeController extends BaseQueryController<me.oreos.iam.entities.ResourceType, Integer> {
+    public ResourceTypeController(ResourceTypeService resourceTypeService, ResponseHelper<me.oreos.iam.entities.ResourceType> responseHelper) {
+        super(resourceTypeService, responseHelper);
     }
 }
