@@ -11,6 +11,8 @@ import org.hibernate.annotations.Type;
 import org.hibernate.annotations.Where;
 import org.joda.time.DateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -36,6 +38,7 @@ public class Token extends MyBaseEntity<Integer> {
     @Column(name = "token", nullable = false, unique = true)
     private String token;
 
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -50,12 +53,15 @@ public class Token extends MyBaseEntity<Integer> {
     )
     private DateTime expiresAt;
 
+    @JsonIgnore
     @Column(name = "ip_address", nullable = true)
     private String ipAddress;
 
+    @JsonIgnore
     @Column(name = "device_info", nullable = true)
     private String deviceInfo;
 
+    @JsonIgnore
     @Column(name = "login_location", nullable = true)
     private String loginLocation;
 

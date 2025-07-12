@@ -1,5 +1,7 @@
 package me.oreos.iam.controllers;
 
+import java.time.Duration;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.joda.time.DateTime;
@@ -17,8 +19,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import me.oreos.iam.services.UserService;
 import me.oreos.iam.services.utils.Helper;
-import me.oreos.iam.Dtos.LoginDto;
+import me.oreos.iam.services.utils.PasswordHasher;
+import me.oreos.iam.Dtos.*;
 import me.oreos.iam.entities.Token;
+import me.oreos.iam.services.SecurityService;
 import me.oreos.iam.services.TokenProvider;
 import me.oreos.iam.services.TokenService;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,53 +34,129 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Controller
 @ResponseBody
 @RequestMapping(value = "/api/v1/auth"
-// , consumes = { "application/json", "application/org.wakanda.fw-v1+json" }, produces = { "application/json", "application/org.wakanda.fw-v1+json" }
+// , consumes = { "application/json", "application/org.wakanda.fw-v1+json" },
+// produces = { "application/json", "application/org.wakanda.fw-v1+json" }
 )
-public class AuthController  {
+public class AuthController {
 
     private final TokenProvider tokenProvider;
-
     private final UserService userService;
     private final TokenService tokenService;
     private final ResponseHelper<String> responseHelper;
-    public AuthController(UserService userService, TokenService tokenService, ResponseHelper<String> responseHelper, TokenProvider tokenProvider) {
+    private final SecurityService securityService; 
+
+    public AuthController(UserService userService, TokenService tokenService, ResponseHelper<String> responseHelper,
+            TokenProvider tokenProvider, SecurityService securityService) {
         this.userService = userService;
         this.tokenService = tokenService;
         this.responseHelper = responseHelper;
         this.tokenProvider = tokenProvider;
+        this.securityService = securityService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<ResponseDTO<String>> login(@RequestBody LoginDto loginDto, HttpServletRequest request) {
-        var userOpt = userService.findByEmail(loginDto.emailAddress);
 
-        if (userOpt.isEmpty()) {
-            // throw new BaseException(401, "Inavlid credentials");
-            return this.responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR,  "Invalid credentials", "");
-        }
-
-        String ipAddress = Helper.getClientIp(request);
-        String deviceInfo = request.getHeader("User-Agent");
-        String loginLocation = null;
         try {
-            loginLocation = Helper.getGeoLocation(ipAddress).toString();
+            var userOpt = userService.findByEmail(loginDto.emailAddress);
+
+            if (userOpt.isEmpty()) {
+                // throw new BaseException(401, "Inavlid credentials");
+                return this.responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR,
+                        "Invalid credentials", "");
+            }
+
+            String ipAddress = Helper.getClientIp(request);
+            String deviceInfo = request.getHeader("User-Agent");
+            String loginLocation = null;
+            try {
+                loginLocation = Helper.getGeoLocation(ipAddress).toString();
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
+
+            var user = userOpt.get();
+
+            if (!PasswordHasher.verifyPassword(loginDto.password, user.getPasswordHash())) {
+                return this.responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR,
+                        "Invalid credentials", "");
+            }
+
+            var tokenString = tokenProvider.generateToken(user.getEmail());
+            var claims = tokenProvider.validateToken(tokenString);
+
+            var token = new Token();
+            token.setUser(user);
+            token.setToken(tokenString);
+            token.setExpiresAt(new DateTime(claims.getExpiration())); // 1 hour expiration
+            token.setIpAddress(ipAddress);
+            token.setDeviceInfo(deviceInfo);
+            token.setLoginLocation(loginLocation);
+
+            token = tokenService.save(token);
+            return responseHelper.ok("login successful", token.getToken());
         } catch (Exception e) {
-            log.error(e.getMessage());
+            // log.error("Login failed: {}", e.getMessage());
+            return responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR, "Invalid credentials", "");
         }
-        
-        var user = userOpt.get();
-        var tokenString = tokenProvider.generateToken(user.getEmail());
-        var claims = tokenProvider.validateToken(tokenString);
+    }
 
-        var token = new Token();
-        token.setUser(user);
-        token.setToken(tokenString);
-        token.setExpiresAt(new DateTime(claims.getExpiration())); // 1 hour expiration
-        token.setIpAddress(ipAddress);
-        token.setDeviceInfo(deviceInfo);
-        token.setLoginLocation(loginLocation);
+    @PostMapping("/forgot-password")
+    public ResponseEntity<ResponseDTO<String>> forgotPassword(@RequestBody ForgotPasswordDto dto) {
+        try {
+            var userOpt = userService.findByEmail(dto.emailAddress);
 
-        token = tokenService.save(token);
-        return responseHelper.ok("login successful", token.getToken());
+            // Always return success to avoid user enumeration
+            if (userOpt.isEmpty()) {
+                return responseHelper.ok("Password reset email sent", "");
+            }
+
+            var user = userOpt.get();
+            var secret = securityService.generateOtpSecret(user.getEmail(), Duration.ofMinutes(10));
+            var otp = securityService.generateTotp(secret);
+
+            System.out.println("Generated OTP: " + otp); // For debugging, remove in production
+
+            // mailService.sendResetPasswordEmail(new ResetPasswordEmailRequest(
+            // user.getProfile().getFullName(),
+            // user.getEmailAddress(),
+            // otp
+            // ));
+
+            return responseHelper.ok("Password reset email sent", "");
+        } catch (Exception e) {
+            // log.error("Forgot password failed: {}", e.getMessage());
+            return responseHelper.error(HttpStatus.INTERNAL_SERVER_ERROR, ResponseType.UNKNOWN_ERROR,
+                    "Unexpected error", "");
+        }
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ResponseDTO<String>> resetPassword(@RequestBody ResetPasswordDto dto) {
+        try {
+
+            if (!securityService.verifyOtp(dto.emailAddress, dto.otp)) {
+                return responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR, "Invalid reset OTP",
+                        "");
+            }
+
+            var userOpt = userService.findByEmail(dto.emailAddress);
+
+            if (userOpt.isEmpty()) {
+                return responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR, "User not found", "");
+            }
+
+            var user = userOpt.get();
+            user.setPasswordHash(PasswordHasher.hashPassword(dto.newPassword));
+
+            userService.save(user);
+            // securityService.deleteOtp(identifier, identifierType);
+
+            return responseHelper.ok("Password reset successfully", "");
+        } catch (Exception e) {
+            // log.error("Reset password failed: {}", e.getMessage());
+            return responseHelper.error(HttpStatus.INTERNAL_SERVER_ERROR, ResponseType.UNKNOWN_ERROR,
+                    "Unexpected error", "");
+        }
     }
 }

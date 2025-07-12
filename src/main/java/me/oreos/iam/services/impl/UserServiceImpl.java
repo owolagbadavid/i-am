@@ -24,13 +24,13 @@ public class UserServiceImpl extends BaseServiceImpl<User, Integer> implements U
 
     @Override
     public Optional<User> findByEmail(String email) {
-        log.debug("Finding user by email: {}", email);
+        // log.debug("Finding user by email: {}", email);
         return userRepository.findByEmail(email);
     }
 
     @Override
     public Optional<User> findDistinctByEmail(String email) {
-        log.debug("Finding distinct user by email: {}", email);
+        // log.debug("Finding distinct user by email: {}", email);
         return userRepository.findDistinctByEmail(email);
     }
 

@@ -37,7 +37,7 @@ public class ActionServiceImpl extends BaseServiceImpl<Action, Integer> implemen
 
     @Override
     public List<Action> findAllByIsActiveTrue() {
-        log.debug("Retrieving all active actions");
+        // log.debug("Retrieving all active actions");
         return actionRepository.findAllByIsActiveTrue();
     }
 }
