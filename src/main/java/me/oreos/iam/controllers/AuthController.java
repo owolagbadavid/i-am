@@ -41,7 +41,7 @@ public class AuthController {
     private final UserService userService;
     private final TokenService tokenService;
     private final ResponseHelper<String> responseHelper;
-    private final SecurityService securityService; 
+    private final SecurityService securityService;
 
     public AuthController(UserService userService, TokenService tokenService, ResponseHelper<String> responseHelper,
             TokenProvider tokenProvider, SecurityService securityService) {
@@ -156,4 +156,15 @@ public class AuthController {
                     "Unexpected error", "");
         }
     }
+
+    @PostMapping("/authorization")
+    public ResponseEntity<ResponseDTO<String>> authorizeUser(@RequestBody AuthorizationRequestDto dto) {
+        try {
+            // TODO: process authorization request
+            return responseHelper.ok("Authorization successful", "");
+        } catch (Exception e) {
+            return Helper.errorHandler(e);
+        }
+    }
+
 }

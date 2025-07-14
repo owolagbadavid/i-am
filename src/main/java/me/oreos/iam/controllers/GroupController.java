@@ -40,13 +40,13 @@ public class GroupController extends BaseQueryController<me.oreos.iam.entities.G
     }
 
     // add user to group
-    @PostMapping("{groupId}/users/{userId}")
+    @PostMapping("{id}/users/{userId}")
     public ResponseEntity<ResponseDTO<Group>> postMethodName(@RequestBody String entity,
-            @PathVariable Integer groupId,
+            @PathVariable Integer id,
             @PathVariable Integer userId) {
 
         try {
-            var group = groupService.addUserGroup(groupId, userId);
+            var group = groupService.addUserGroup(id, userId);
 
             return responseHelper.success(
                     HttpStatus.CREATED,
@@ -59,13 +59,13 @@ public class GroupController extends BaseQueryController<me.oreos.iam.entities.G
 
     }
 
-    @DeleteMapping("{groupId}/users/{userId}")
+    @DeleteMapping("{id}/users/{userId}")
     public ResponseEntity<ResponseDTO<Group>> removeUserFromGroup(
-            @PathVariable Integer groupId,
+            @PathVariable Integer id,
             @PathVariable Integer userId) {
 
         try {
-            var group = groupService.removeUserGroup(groupId, userId);
+            var group = groupService.removeUserGroup(id, userId);
 
             return responseHelper.success(
                     HttpStatus.OK,

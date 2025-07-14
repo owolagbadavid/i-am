@@ -2,10 +2,6 @@ package me.oreos.iam.services.impl;
 
 import dev.samstevens.totp.code.DefaultCodeGenerator;
 import dev.samstevens.totp.code.DefaultCodeVerifier;
-import dev.samstevens.totp.code.HashingAlgorithm;
-import dev.samstevens.totp.qr.QrData;
-import dev.samstevens.totp.qr.QrGenerator;
-import dev.samstevens.totp.qr.ZxingPngQrGenerator;
 import dev.samstevens.totp.recovery.RecoveryCodeGenerator;
 import dev.samstevens.totp.secret.DefaultSecretGenerator;
 import dev.samstevens.totp.time.SystemTimeProvider;
@@ -13,14 +9,18 @@ import lombok.extern.slf4j.Slf4j;
 import me.oreos.iam.services.SecurityService;
 
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.context.annotation.Profile;
+
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.Profiles;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+// import dev.samstevens.totp.code.HashingAlgorithm;
+// import dev.samstevens.totp.qr.QrData;
+// import dev.samstevens.totp.qr.QrGenerator;
+// import dev.samstevens.totp.qr.ZxingPngQrGenerator;
+// import java.io.File;
+// import java.io.FileOutputStream;
+// import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 

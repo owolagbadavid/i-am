@@ -37,14 +37,28 @@ public class UserController extends BaseQueryController<me.oreos.iam.entities.Us
     }
 
     // assign role to user
-    @PostMapping("{userId}/roles/{roleId}")
-    public ResponseEntity<ResponseDTO<User>> addUserRole(@PathVariable Integer userId, @PathVariable Integer roleId) {
+    @PostMapping("{id}/roles/{roleId}")
+    public ResponseEntity<ResponseDTO<User>> addUserRole(@PathVariable Integer id, @PathVariable Integer roleId) {
         try {
-            var user = userService.addUserRole(userId, roleId);
+            var user = userService.addUserRole(id, roleId);
             return responseHelper.success(
                     HttpStatus.CREATED,
                     ResponseType.CREATED,
                     "User role added successfully",
+                    user);
+        } catch (Exception e) {
+            return Helper.errorHandler(e);
+        }
+    }
+
+    @PostMapping("{id}/policies/{policyId}")
+    public ResponseEntity<ResponseDTO<User>> addUserPolicy(@PathVariable Integer id, @PathVariable Integer policyId) {
+        try {
+            var user = userService.addUserPolicy(id, policyId);
+            return responseHelper.success(
+                    HttpStatus.CREATED,
+                    ResponseType.CREATED,
+                    "User policy added successfully",
                     user);
         } catch (Exception e) {
             return Helper.errorHandler(e);

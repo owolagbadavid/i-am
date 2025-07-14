@@ -17,6 +17,7 @@ import me.oreos.iam.entities.enums.EffectiveScopeEnum;
 import org.hibernate.annotations.Where;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -53,9 +54,10 @@ public class PolicyPermission extends MyBaseEntity<Integer> {
     private Permission permission;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     @org.hibernate.annotations.Type(type = "pgsql_enum")
     @Column(name = "scope", nullable = false)
-    private EffectiveScopeEnum scope;
+    private EffectiveScopeEnum scope = EffectiveScopeEnum.DEFAULT;
 
     @Column(name = "resource_id", nullable = true)
     private Integer resourceId;

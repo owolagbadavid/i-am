@@ -4,7 +4,8 @@ public enum EffectiveScopeEnum {
     OWN("own"),
     GROUP("group"),
     ALL("all"),
-    ITEM("item");
+    ITEM("item"),
+    DEFAULT("default");
 
     private String value;
 
