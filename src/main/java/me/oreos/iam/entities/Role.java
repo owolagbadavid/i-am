@@ -1,5 +1,6 @@
 package me.oreos.iam.entities;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.AttributeOverride;
@@ -7,10 +8,12 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
 
-
 import org.hibernate.annotations.Where;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -27,10 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 @ToString
 @Where(clause = "is_active = true AND deleted_on IS NULL")
 @Entity(name = "roles")
-@AttributeOverride(
-    name = "isActive",
-    column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
-)
+@AttributeOverride(name = "isActive", column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false))
 public class Role extends MyBaseEntity<Integer> {
     @Column(name = "code", nullable = false, unique = true)
     private String code;
@@ -38,9 +38,15 @@ public class Role extends MyBaseEntity<Integer> {
     @Column(name = "description", nullable = true)
     private String description;
 
+    @JsonIgnore
+    @ToString.Exclude
+    @Builder.Default
     @OneToMany(mappedBy = "role")
-    private List<RolePermission> rolePermissions;
+    private List<RolePermission> rolePermissions = new ArrayList<>();
 
+    @JsonIgnore
+    @ToString.Exclude
+    @Builder.Default
     @OneToMany(mappedBy = "role")
-    private List<UserRole> userRoles;
+    private List<UserRole> userRoles = new ArrayList<>();
 }

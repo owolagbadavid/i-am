@@ -12,4 +12,6 @@ public interface UserService extends BaseService<User, Integer> {
     public Optional<User> findByEmail(String email);
 
     public Optional<User> findDistinctByEmail(String email);
+
+    public User addUserRole(Integer userId, Integer roleId) throws Exception;
 }

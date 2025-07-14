@@ -7,6 +7,12 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 
 import org.json.JSONObject;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.wakanda.framework.exception.BaseException;
+import org.wakanda.framework.response.dto.ResponseDTO;
+import org.wakanda.framework.response.enums.ResponseType;
+import org.wakanda.framework.response.helper.ResponseHelper;
 
 public final class Helper {
     public static String getClientIp(javax.servlet.http.HttpServletRequest request) {
@@ -44,5 +50,56 @@ public final class Helper {
     // UserAgent userAgent = UserAgent.parseUserAgentString(userAgentString);
     // OperatingSystem os = userAgent.getOperatingSystem();
     // Browser browser = userAgent.getBrowser();
+
+    public static <T> ResponseEntity<ResponseDTO<T>> errorHandler(Exception e) {
+        return errorHandler(e, false);
+    }
+
+    public static <T> ResponseEntity<ResponseDTO<T>> errorHandler(Exception e, boolean showStackTrace) {
+        var responseHelper = new ResponseHelper<T>();
+        HttpStatus status = HttpStatus.INTERNAL_SERVER_ERROR;
+        ResponseType responseType = ResponseType.UNKNOWN_ERROR;
+        String message = e.getMessage();
+
+        if (e instanceof BaseException) {
+            BaseException baseException = (BaseException) e;
+            switch (baseException.getCode()) {
+                case 400:
+                    status = HttpStatus.BAD_REQUEST;
+                    responseType = ResponseType.BAD_REQUEST;
+                    break;
+                case 401:
+                    status = HttpStatus.UNAUTHORIZED;
+                    responseType = ResponseType.FORBIDDEN;
+                    break;
+                case 403:
+                    status = HttpStatus.FORBIDDEN;
+                    responseType = ResponseType.FORBIDDEN;
+                    break;
+                case 404:
+                    status = HttpStatus.NOT_FOUND;
+                    responseType = ResponseType.NOT_FOUND;
+                    break;
+                case 409:
+                    status = HttpStatus.CONFLICT;
+                    responseType = ResponseType.CONFLICT;
+                    break;
+                case 500:
+                    status = HttpStatus.INTERNAL_SERVER_ERROR;
+                    responseType = ResponseType.UNKNOWN_ERROR;
+                    message = "An unexpected error occurred" + (showStackTrace ? ": " + e.getMessage() : "");
+                    break;
+                default:
+                    status = HttpStatus.INTERNAL_SERVER_ERROR;
+                    responseType = ResponseType.UNKNOWN_ERROR;
+                    message = "An unexpected error occurred" + (showStackTrace ? ": " + e.getMessage() : "");
+                    break;
+            }
+        }
+        return responseHelper.error(
+                status,
+                responseType,
+                message);
+    }
 
 }

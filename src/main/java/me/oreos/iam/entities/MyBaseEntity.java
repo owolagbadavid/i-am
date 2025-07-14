@@ -28,14 +28,19 @@ import lombok.extern.slf4j.Slf4j;
 @ToString
 @MappedSuperclass
 public class MyBaseEntity<T extends Serializable> extends BaseEntity<T> {
-    @JsonIgnore
-    @Column(
-      name = "deleted_on",
-      nullable = true
-    )
-    @Temporal(TemporalType.TIMESTAMP)
-    @Type(
-      type = "org.wakanda.framework.util.TimeBridgeForMillis"
-    )
-    private DateTime deletedOn; 
+  @JsonIgnore
+  @Column(name = "deleted_on", nullable = true)
+  @Temporal(TemporalType.TIMESTAMP)
+  @Type(type = "org.wakanda.framework.util.TimeBridgeForMillis")
+  private DateTime deletedOn;
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o)
+      return true;
+    if (!(o instanceof MyBaseEntity))
+      return false;
+    MyBaseEntity<?> that = (MyBaseEntity<?>) o;
+    return getId().equals(that.getId());
+  }
 }
