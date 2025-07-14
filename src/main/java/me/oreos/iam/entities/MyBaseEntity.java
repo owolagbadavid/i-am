@@ -9,6 +9,8 @@ import org.hibernate.annotations.Type;
 import org.joda.time.DateTime;
 import org.wakanda.framework.entity.BaseEntity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -26,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 @ToString
 @MappedSuperclass
 public class MyBaseEntity<T extends Serializable> extends BaseEntity<T> {
+    @JsonIgnore
     @Column(
       name = "deleted_on",
       nullable = true

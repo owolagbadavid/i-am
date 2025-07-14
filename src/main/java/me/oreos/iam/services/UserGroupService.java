@@ -1,10 +1,12 @@
 package me.oreos.iam.services;
 
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Service;
-import org.wakanda.framework.service.BaseService;
 import me.oreos.iam.entities.UserGroup;
 
 @Service
-public interface UserGroupService extends BaseService<UserGroup, Integer> {
+public interface UserGroupService extends MyBaseService<UserGroup, Integer> {
+    Optional<UserGroup> findByUserIdAndGroupId(Integer userId, Integer groupId);
 }
