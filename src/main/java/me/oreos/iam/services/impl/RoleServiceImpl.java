@@ -7,8 +7,6 @@ import org.wakanda.framework.exception.BaseException;
 import org.wakanda.framework.service.BaseServiceImpl;
 
 import lombok.extern.slf4j.Slf4j;
-import me.oreos.iam.entities.Policy;
-import me.oreos.iam.entities.PolicyPermission;
 import me.oreos.iam.entities.Role;
 import me.oreos.iam.entities.RolePermission;
 import me.oreos.iam.entities.enums.EffectiveScopeEnum;

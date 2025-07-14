@@ -20,6 +20,7 @@ import me.oreos.iam.services.utils.Helper;
 import me.oreos.iam.services.utils.PasswordHasher;
 import me.oreos.iam.Dtos.*;
 import me.oreos.iam.entities.Token;
+import me.oreos.iam.services.AuthService;
 import me.oreos.iam.services.SecurityService;
 import me.oreos.iam.services.TokenProvider;
 import me.oreos.iam.services.TokenService;
@@ -42,14 +43,16 @@ public class AuthController {
     private final TokenService tokenService;
     private final ResponseHelper<String> responseHelper;
     private final SecurityService securityService;
+    private final AuthService authService;
 
     public AuthController(UserService userService, TokenService tokenService, ResponseHelper<String> responseHelper,
-            TokenProvider tokenProvider, SecurityService securityService) {
+            TokenProvider tokenProvider, SecurityService securityService, AuthService authService) {
         this.userService = userService;
         this.tokenService = tokenService;
         this.responseHelper = responseHelper;
         this.tokenProvider = tokenProvider;
         this.securityService = securityService;
+        this.authService = authService;
     }
 
     @PostMapping("/login")
@@ -160,7 +163,7 @@ public class AuthController {
     @PostMapping("/authorization")
     public ResponseEntity<ResponseDTO<String>> authorizeUser(@RequestBody AuthorizationRequestDto dto) {
         try {
-            // TODO: process authorization request
+            authService.authorize(dto);
             return responseHelper.ok("Authorization successful", "");
         } catch (Exception e) {
             return Helper.errorHandler(e);
