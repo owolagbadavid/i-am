@@ -4,6 +4,7 @@ import org.joda.time.Instant;
 import org.springframework.stereotype.Service;
 import org.wakanda.framework.exception.BaseException;
 
+import io.jsonwebtoken.Claims;
 import me.oreos.iam.Dtos.AuthorizationRequestDto;
 import me.oreos.iam.repositories.ActionRepository;
 import me.oreos.iam.repositories.ResourceRepository;
@@ -42,25 +43,10 @@ public class AuthServiceImpl implements AuthService {
             throw new BaseException(404, "Resource not found: " + request.resourceId);
         }
 
-        var tokenOpt = tokenService.findByToken(request.authToken);
-        if (tokenOpt.isEmpty()) {
-            throw new BaseException(401, "Invalid token");
-        }
-
-        var token = tokenOpt.get();
         var action = actionOpt.get();
         var resource = resourceOpt.get();
 
-        var claims = tokenProvider.validateToken(token.getToken());
-        var isExpired = tokenProvider.isTokenExpired(claims);
-
-        if (isExpired) {
-            throw new BaseException(401, "Invalid token");
-        }
-
-        if (token.getExpiresAt().isBefore(new Instant().getMillis())) {
-            throw new BaseException(401, "Invalid token");
-        }
+        var claims = validateToken(request.authToken);
 
         var userOpt = userRepository.findByEmail(claims.getSubject());
         if (userOpt.isEmpty()) {
@@ -69,8 +55,28 @@ public class AuthServiceImpl implements AuthService {
 
         var user = userOpt.get();
 
-        System.out.println("User: " + user.getEmail() + ", Action: " + action.getCode() + ", Resource: " + resource.getResourceId());
+        System.out.println("User: " + user.getEmail() + ", Action: " + action.getCode() + ", Resource: "
+                + resource.getResourceId());
 
         // Authorization logic here
+    }
+
+    private Claims validateToken(String token) {
+        var tokenOpt = tokenService.findByToken(token);
+        if (tokenOpt.isEmpty()) {
+            throw new BaseException(401, "Invalid token");
+        }
+
+        var claims = tokenProvider.validateToken(token);
+        var isExpired = tokenProvider.isTokenExpired(claims);
+
+        if (isExpired) {
+            throw new BaseException(401, "Invalid token");
+        }
+
+        if (tokenOpt.get().getExpiresAt().isBefore(new Instant().getMillis())) {
+            throw new BaseException(401, "Invalid token");
+        }
+        return claims;
     }
 }
