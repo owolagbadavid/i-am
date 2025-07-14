@@ -39,13 +39,13 @@ public class UserServiceImpl extends MyBaseServiceImpl<User, Integer> implements
     @Override
     public Optional<User> findByEmail(String email) {
         // log.debug("Finding user by email: {}", email);
-        return Optional.ofNullable(userRepository.findByEmail(email));
+        return userRepository.findByEmail(email);
     }
 
     @Override
     public Optional<User> findDistinctByEmail(String email) {
         // log.debug("Finding distinct user by email: {}", email);
-        return Optional.ofNullable(userRepository.findDistinctByEmail(email));
+        return userRepository.findDistinctByEmail(email);
     }
 
     @Override

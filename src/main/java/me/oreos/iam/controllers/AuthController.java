@@ -150,7 +150,6 @@ public class AuthController {
             user.setPasswordHash(PasswordHasher.hashPassword(dto.newPassword));
 
             userService.save(user);
-            // securityService.deleteOtp(identifier, identifierType);
 
             return responseHelper.ok("Password reset successfully", "");
         } catch (Exception e) {

@@ -1,6 +1,7 @@
 package me.oreos.iam.services.impl;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.transaction.Transactional;
 
@@ -24,13 +25,13 @@ public class ActionServiceImpl extends BaseServiceImpl<Action, Integer> implemen
     }
 
     @Override
-    public Action findByCode(String code) {
+    public Optional<Action> findByCode(String code) {
         // log.debug("Finding action by code: {}", code);
         return actionRepository.findByCode(code);
     }
 
     @Override
-    public Action findDistinctByCode(String code) {
+    public Optional<Action> findDistinctByCode(String code) {
         // log.debug("Finding distinct action by code: {}", code);
         return actionRepository.findDistinctByCode(code);
     }
