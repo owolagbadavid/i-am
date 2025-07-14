@@ -1,7 +1,5 @@
 package me.oreos.iam.controllers;
 
-import java.time.Duration;
-
 import javax.servlet.http.HttpServletRequest;
 
 import org.joda.time.DateTime;
@@ -112,8 +110,7 @@ public class AuthController {
             }
 
             var user = userOpt.get();
-            var secret = securityService.generateOtpSecret(user.getEmail(), Duration.ofMinutes(10));
-            var otp = securityService.generateTotp(secret);
+            var otp = securityService.generateOtp(user.getEmail());
 
             System.out.println("Generated OTP: " + otp); // For debugging, remove in production
 

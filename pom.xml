@@ -13,56 +13,50 @@
     </properties>
 
     <dependencies>
-    <dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-api</artifactId>
-    <version>0.11.5</version>
-</dependency>
-<dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-impl</artifactId>
-    <version>0.11.5</version>
-    <scope>runtime</scope>
-</dependency>
-<dependency>
-    <groupId>io.jsonwebtoken</groupId>
-    <artifactId>jjwt-jackson</artifactId> <!-- or jjwt-gson, jjwt-orgjson -->
-    <version>0.11.5</version>
-    <scope>runtime</scope>
-</dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>            <!-- or jjwt-gson, jjwt-orgjson -->
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
 
         <dependency>
             <groupId>org.wakanda.framework</groupId>
             <artifactId>wakanda-framework</artifactId>
             <version>1.0.3</version>
         </dependency>
-        
+
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>42.7.3</version>
         </dependency>
         <dependency>
-    <groupId>org.liquibase.ext</groupId>
-    <artifactId>liquibase-hibernate5</artifactId>
-    <version>4.17.2</version>
-</dependency>
-<dependency>
-    <groupId>org.passay</groupId>
-    <artifactId>passay</artifactId>
-    <version>1.6.6</version>
-</dependency>
-<dependency>
-    <groupId>dev.samstevens.totp</groupId>
-    <artifactId>totp</artifactId>
-    <version>1.7.1</version>
-</dependency>
-<!-- <dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-cache</artifactId>
-    <version>2.7.0</version>
-</dependency> -->
-
+            <groupId>org.liquibase.ext</groupId>
+            <artifactId>liquibase-hibernate5</artifactId>
+            <version>4.17.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.passay</groupId>
+            <artifactId>passay</artifactId>
+            <version>1.6.6</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.samstevens.totp</groupId>
+            <artifactId>totp</artifactId>
+            <version>1.7.1</version>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -81,27 +75,27 @@
     </repositories>
 
     <build>
-  <plugins>
-    <plugin>
-      <groupId>org.liquibase</groupId>
-      <artifactId>liquibase-maven-plugin</artifactId>
-      <version>4.17.2</version>
-      <configuration>
-      <propertyFile>liquibase.properties</propertyFile>
-      </configuration>
-    </plugin>
-    <plugin>
-        <groupId>org.flywaydb</groupId>
-        <artifactId>flyway-maven-plugin</artifactId>
-        <version>9.0.0</version>
-        <configuration>
-            <url>jdbc:postgresql://localhost:5432/iam</url>
-            <user>postgres</user>
-            <password>postgres</password>
-            </configuration>
-           
-    </plugin>
-  </plugins>
-</build>
+        <plugins>
+            <plugin>
+                <groupId>org.liquibase</groupId>
+                <artifactId>liquibase-maven-plugin</artifactId>
+                <version>4.17.2</version>
+                <configuration>
+                    <propertyFile>liquibase.properties</propertyFile>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-maven-plugin</artifactId>
+                <version>9.0.0</version>
+                <configuration>
+                    <url>jdbc:postgresql://localhost:5432/iam</url>
+                    <user>postgres</user>
+                    <password>postgres</password>
+                </configuration>
+
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

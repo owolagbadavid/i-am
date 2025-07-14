@@ -4,18 +4,14 @@ import java.time.Duration;
 
 public interface SecurityService {
 
-    /**
-     * Generate a TOTP secret for the user and store it in Redis.
-     */
-    String generateOtpSecret(String email, Duration expiry);
+    boolean verifyOtp(String email, String code);
+    String generateOtp(String email);
+    void deleteOtp(String email);
 
+    // TOTP methods
+    
+    String generateTotpSecret(String email, Duration expiry);
     String generateTotp(String secret) throws Exception;
-
-    /**
-     * Verify the OTP code sent by the user.
-     */
-    boolean verifyOtp(String email, String userInputCode);
-
-    void deleteOtpSecret(String email);
-
+    boolean verifyTotp(String secret, String code);
+    String[] generateRecoveryCode();
 }
