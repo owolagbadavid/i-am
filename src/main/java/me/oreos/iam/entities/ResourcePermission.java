@@ -7,9 +7,7 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
+import javax.persistence.Table;
 
 import me.oreos.iam.entities.enums.EnforcementScopeEnum;
 
@@ -31,17 +29,12 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 @ToString
 @Where(clause = "is_active = true AND deleted_on IS NULL")
-@Entity(name = "resource_permissions")
+@Entity
+@Table(name = "resource_permissions")
 @AttributeOverride(
     name = "isActive",
     column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
 )
-@TypeDefs({
-    @TypeDef(
-        name = "pgsql_enum",
-        typeClass = EnumType.class
-    )
-})
 public class ResourcePermission extends MyBaseEntity<Integer> {
     @ManyToOne
     @JoinColumn(name = "resource_id", nullable = false)
@@ -52,9 +45,8 @@ public class ResourcePermission extends MyBaseEntity<Integer> {
     private Permission permission;
 
     @Enumerated(EnumType.STRING)
-    @org.hibernate.annotations.Type(type = "pgsql_enum")
     @Column(name = "scope", nullable = false
-    // ,columnDefinition = "enforcement_scope_enum"
+    ,columnDefinition = "VARCHAR(20)"
     )
     private EnforcementScopeEnum scope;
 }

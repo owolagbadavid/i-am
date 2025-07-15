@@ -7,6 +7,7 @@ import javax.persistence.AttributeOverride;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 import javax.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -32,7 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 @ToString
 @Where(clause = "is_active = true AND deleted_on IS NULL")
 @SuperBuilder
-@Entity(name = "users")
+@Entity
+@Table(name = "users")
 @AttributeOverride(
     name = "isActive",
     column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)

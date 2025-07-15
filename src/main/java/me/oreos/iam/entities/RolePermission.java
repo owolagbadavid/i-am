@@ -7,12 +7,9 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
-
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
+import javax.persistence.Table;
 
 import me.oreos.iam.entities.enums.EffectiveScopeEnum;
-
 
 import org.hibernate.annotations.Where;
 
@@ -33,17 +30,9 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 @ToString
 @Where(clause = "is_active = true AND deleted_on IS NULL")
-@Entity(name = "role_permissions")
-@AttributeOverride(
-    name = "isActive",
-    column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
-)
-@TypeDefs({
-    @TypeDef(
-        name = "pgsql_enum",
-        typeClass = EnumType.class
-    )
-})
+@Entity
+@Table(name = "role_permissions")
+@AttributeOverride(name = "isActive", column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false))
 public class RolePermission extends MyBaseEntity<Integer> {
     @ManyToOne
     @JoinColumn(name = "role_id", nullable = false)
@@ -53,10 +42,9 @@ public class RolePermission extends MyBaseEntity<Integer> {
     @JoinColumn(name = "permission_id", nullable = false)
     private Permission permission;
 
-    @Enumerated(EnumType.STRING)
     @Builder.Default
-    @org.hibernate.annotations.Type(type = "pgsql_enum")
-    @Column(name = "scope", nullable = true)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "scope", nullable = false, columnDefinition = "VARCHAR(20)")
     private EffectiveScopeEnum scope = EffectiveScopeEnum.DEFAULT;
 
     @Column(name = "resource_id", nullable = true)

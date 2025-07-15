@@ -7,7 +7,7 @@ import javax.persistence.AttributeOverride;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
-
+import javax.persistence.Table;
 
 import org.hibernate.annotations.Where;
 
@@ -30,7 +30,8 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 @ToString
 @Where(clause = "is_active = true AND deleted_on IS NULL")
-@Entity(name = "policies")
+@Entity
+@Table(name = "policies")
 @AttributeOverride(
     name = "isActive",
     column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)

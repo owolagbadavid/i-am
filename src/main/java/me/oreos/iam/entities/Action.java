@@ -7,6 +7,7 @@ import javax.persistence.AttributeOverride;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -27,7 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 @Getter
 @Setter
 @ToString
-@Entity(name = "actions")
+@Entity
+@Table(name = "actions")
 @AttributeOverride(
     name = "isActive",
     column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)

@@ -7,9 +7,8 @@ import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
-import org.hibernate.annotations.TypeDef;
-import org.hibernate.annotations.TypeDefs;
 
 import me.oreos.iam.entities.enums.EffectiveScopeEnum;
 
@@ -33,17 +32,12 @@ import lombok.extern.slf4j.Slf4j;
 @Setter
 @ToString
 @Where(clause = "is_active = true AND deleted_on IS NULL")
-@Entity(name = "policy_permissions")
+@Entity
+@Table(name = "policy_permissions")
 @AttributeOverride(
     name = "isActive",
     column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
 )
-@TypeDefs({
-    @TypeDef(
-        name = "pgsql_enum",
-        typeClass = EnumType.class
-    )
-})
 public class PolicyPermission extends MyBaseEntity<Integer> {
     @ManyToOne
     @JoinColumn(name = "policy_id", nullable = false)
@@ -53,10 +47,9 @@ public class PolicyPermission extends MyBaseEntity<Integer> {
     @JoinColumn(name = "permission_id", nullable = false)
     private Permission permission;
 
-    @Enumerated(EnumType.STRING)
     @Builder.Default
-    @org.hibernate.annotations.Type(type = "pgsql_enum")
-    @Column(name = "scope", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "scope", nullable = false, columnDefinition = "VARCHAR(20)")
     private EffectiveScopeEnum scope = EffectiveScopeEnum.DEFAULT;
 
     @Column(name = "resource_id", nullable = true)
