@@ -15,7 +15,6 @@ import io.jsonwebtoken.Claims;
 import me.oreos.iam.Dtos.AuthorizationRequestDto;
 import me.oreos.iam.entities.Action;
 import me.oreos.iam.entities.Resource;
-import me.oreos.iam.entities.ResourceType;
 import me.oreos.iam.entities.models.UserPermissionModel;
 import me.oreos.iam.repositories.ActionRepository;
 import me.oreos.iam.repositories.PermissionRepository;
