@@ -2,7 +2,8 @@ package me.oreos.iam.entities.enums;
 
 public enum EnforcementScopeEnum {
     OWN("own"),
-    GROUP("group");
+    GROUP("group"),
+    DEFAULT("default");
 
     private String value;
 
