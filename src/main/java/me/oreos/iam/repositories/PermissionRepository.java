@@ -18,7 +18,8 @@ public interface PermissionRepository extends BaseRepository<me.oreos.iam.entiti
           a.code AS "action",
           rt.id AS "resourceTypeId",
           a.id AS "actionId",
-          rp.scope AS "effectiveScope"
+          rp.scope AS "effectiveScope",
+          rp.resource_id AS "resourceId"
       FROM permissions perm
       JOIN role_permissions rp ON rp.permission_id = perm.id
       JOIN roles r ON rp.role_id = r.id
@@ -38,7 +39,8 @@ public interface PermissionRepository extends BaseRepository<me.oreos.iam.entiti
           a.code AS "action",
           rt.id AS "resourceTypeId",
           a.id AS "actionId",
-          pp.scope AS "effectiveScope"
+          pp.scope AS "effectiveScope",
+          pp.resource_id AS "resourceId"
       FROM permissions perm
       JOIN policy_permissions pp ON pp.permission_id = perm.id
       JOIN policies p ON pp.policy_id = p.id
@@ -68,7 +70,7 @@ public interface PermissionRepository extends BaseRepository<me.oreos.iam.entiti
       JOIN resources r ON rp.resource_id = r.id
       JOIN actions a ON perm.action_id = a.id
       JOIN resource_types rt ON perm.resource_type_id = rt.id
-      WHERE rt.id = :resourceId
+      WHERE r.resource_id = :resourceId
       """, nativeQuery = true)
   List<Map<String, Object>> findResourcePermissions(@Param("resourceId") Integer resourceId);
 }

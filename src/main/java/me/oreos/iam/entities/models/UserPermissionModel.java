@@ -16,5 +16,6 @@ public class UserPermissionModel {
     private String action;
     private Integer resourceTypeId;
     private Integer actionId;
+    private Integer resourceId;
     private EffectiveScopeEnum effectiveScope;
 }

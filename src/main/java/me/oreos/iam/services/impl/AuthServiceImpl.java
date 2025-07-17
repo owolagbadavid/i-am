@@ -15,10 +15,15 @@ import io.jsonwebtoken.Claims;
 import me.oreos.iam.Dtos.AuthorizationRequestDto;
 import me.oreos.iam.entities.Action;
 import me.oreos.iam.entities.Resource;
+import me.oreos.iam.entities.User;
+import me.oreos.iam.entities.UserGroup;
+import me.oreos.iam.entities.enums.EffectiveScopeEnum;
+import me.oreos.iam.entities.models.ResourcePermissionModel;
 import me.oreos.iam.entities.models.UserPermissionModel;
 import me.oreos.iam.repositories.ActionRepository;
 import me.oreos.iam.repositories.PermissionRepository;
 import me.oreos.iam.repositories.ResourceRepository;
+import me.oreos.iam.repositories.UserGroupRepository;
 import me.oreos.iam.repositories.UserRepository;
 import me.oreos.iam.services.AuthService;
 import me.oreos.iam.services.TokenProvider;
@@ -32,16 +37,18 @@ public class AuthServiceImpl implements AuthService {
     private final TokenProvider tokenProvider;
     private final UserRepository userRepository;
     private final PermissionRepository permissionRepository;
+    private final UserGroupRepository userGroupRepository;
 
     protected AuthServiceImpl(ActionRepository actionRepository, ResourceRepository resourceRepository,
             TokenService tokenService, TokenProvider tokenProvider, UserRepository userRepository,
-            PermissionRepository permissionRepository) {
+            PermissionRepository permissionRepository, UserGroupRepository userGroupRepository) {
         this.actionRepository = actionRepository;
         this.resourceRepository = resourceRepository;
         this.tokenService = tokenService;
         this.tokenProvider = tokenProvider;
         this.userRepository = userRepository;
         this.permissionRepository = permissionRepository;
+        this.userGroupRepository = userGroupRepository;
     }
 
     @Override
@@ -52,11 +59,14 @@ public class AuthServiceImpl implements AuthService {
 
         var claims = validateToken(request.authToken);
 
-        var permissions = getUserPermissions(claims.getSubject(), action, resource);
+        var userPermissionPair = getUserPermissions(claims.getSubject(), action, resource);
+        var userPermissions = userPermissionPair.getLeft();
+        var user = userPermissionPair.getRight();
+        var resourcePermissions = getResourcePermissions(resource.getResourceId());
 
         // Authorization logic here
 
-        checkPermissions(permissions, action.getCode(), resource);
+        checkPermissions(userPermissions, user, action.getCode(), resource, resourcePermissions);
     }
 
     private Pair<Action, Resource> getActionAndResource(String actionCode, Integer resourceId) {
@@ -95,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
         return claims;
     }
 
-    private List<UserPermissionModel> getUserPermissions(String email, Action action, Resource resource) {
+    private Pair<List<UserPermissionModel>, User> getUserPermissions(String email, Action action, Resource resource) {
         var userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
             throw new BaseException(404, "User not found");
@@ -114,20 +124,88 @@ public class AuthServiceImpl implements AuthService {
                 new TypeReference<List<UserPermissionModel>>() {
                 });
 
+        return Pair.of(permissions, user);
+    }
+
+    private List<ResourcePermissionModel> getResourcePermissions(Integer resourceId) {
+
+        var permissionsMap = permissionRepository.findResourcePermissions(resourceId);
+
+        Gson gson = new Gson();
+        System.out.println("Resource Permissions: ");
+        System.out.println(gson.toJson(permissionsMap));
+
+        ObjectMapper mapper = new ObjectMapper();
+        List<ResourcePermissionModel> permissions = mapper.convertValue(permissionsMap,
+                new TypeReference<List<ResourcePermissionModel>>() {
+                });
+
         return permissions;
     }
 
-    private void checkPermissions(List<UserPermissionModel> permissions, String actionCode, Resource resource)
-            throws BaseException {
-        for (UserPermissionModel permission : permissions) {
-            if (permission.getAction().equals(actionCode)
-                    && permission.getResourceTypeId().equals(resource.getResourceType().getId())) {
-                return; // Access granted
+    private void checkPermissions(List<UserPermissionModel> userPermissions, User user, String actionCode,
+            Resource resource,
+            List<ResourcePermissionModel> resourcePermissions) throws BaseException {
+        for (UserPermissionModel userPermission : userPermissions) {
+            // Check if action and resource type match
+            if (isActionAndResourceTypeValid(userPermission, actionCode, resource)) {
+                // Check scope requirements
+                if (checkPermissionScope(userPermission, user, resource)) {
+                    return; // Access granted
+                }
             }
         }
 
         throw new BaseException(403,
                 "Access denied for action: " + actionCode + " on resource: " + resource.getResourceId());
 
+    }
+
+    private boolean isActionAndResourceTypeValid(UserPermissionModel userPermission, String actionCode,
+            Resource resource) {
+        return userPermission.getAction().equals(actionCode)
+                && userPermission.getResourceTypeId().equals(resource.getResourceType().getId());
+    }
+
+    private boolean checkPermissionScope(UserPermissionModel userPermission, User user, Resource resource)
+            throws BaseException {
+        EffectiveScopeEnum scope = userPermission.getEffectiveScope();
+
+        switch (scope) {
+            case DEFAULT:
+            case ALL:
+                return true; // DEFAULT and ALL grant access without further checks
+            case OWN:
+                return checkOwnScope(user, resource);
+            case ITEM:
+                return checkItemScope(userPermission, resource);
+            case GROUP:
+                return checkGroupScope(user, resource);
+            default:
+                throw new BaseException(500, "Unsupported permission scope: " + scope);
+        }
+    }
+
+    private boolean checkOwnScope(User user, Resource resource) {
+        // Check if the resource belongs to the user
+        return resource.getUser().getId() != null
+                && resource.getUser().getId().equals(user.getId());
+    }
+
+    private boolean checkItemScope(UserPermissionModel userPermission, Resource resource) {
+        // Check if the resourceId in the permission matches the resource's resourceId
+        return userPermission.getResourceId() != null
+                && userPermission.getResourceId().equals(resource.getResourceId());
+    }
+
+    private boolean checkGroupScope(User user, Resource resource) {
+        // Check if the resource's group is one of the user's groups
+        Integer groupId = resource.getGroup().getId();
+        if (groupId == null) {
+            return false;
+        }
+
+        UserGroup userGroup = userGroupRepository.findByUserIdAndGroupId(user.getId(), groupId);
+        return userGroup != null;
     }
 }

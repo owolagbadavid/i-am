@@ -16,5 +16,5 @@ public class ResourcePermissionModel {
     private String action;
     private Integer resourceTypeId;
     private Integer actionId;
-    private EnforcementScopeEnum effectiveScope;
+    private EnforcementScopeEnum enforcementScope;
 }
