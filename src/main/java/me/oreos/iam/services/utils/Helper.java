@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.Map;
 
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
@@ -13,6 +14,9 @@ import org.wakanda.framework.exception.BaseException;
 import org.wakanda.framework.response.dto.ResponseDTO;
 import org.wakanda.framework.response.enums.ResponseType;
 import org.wakanda.framework.response.helper.ResponseHelper;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 public final class Helper {
     public static String getClientIp(javax.servlet.http.HttpServletRequest request) {
@@ -100,6 +104,18 @@ public final class Helper {
                 status,
                 responseType,
                 message);
+    }
+
+    private static final ObjectMapper mapper = new ObjectMapper();
+
+    // For non-generic classes
+    public static <T> T mapToModel(Map<String, Object> map, Class<T> clazz) {
+        return mapper.convertValue(map, clazz);
+    }
+
+    // For generic types like List<T>, Map<K, V>, etc.
+    public static <T> T mapToModel(Object value, TypeReference<T> typeRef) {
+        return mapper.convertValue(value, typeRef);
     }
 
 }

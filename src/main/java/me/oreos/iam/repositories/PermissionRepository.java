@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import org.wakanda.framework.repository.BaseRepository;
 
+
 @Repository
 public interface PermissionRepository extends BaseRepository<me.oreos.iam.entities.Permission, Integer> {
 

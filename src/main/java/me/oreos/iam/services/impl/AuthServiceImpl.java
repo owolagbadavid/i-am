@@ -1,6 +1,8 @@
 package me.oreos.iam.services.impl;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.Instant;
@@ -8,7 +10,6 @@ import org.springframework.stereotype.Service;
 import org.wakanda.framework.exception.BaseException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
 
 import io.jsonwebtoken.Claims;
@@ -21,6 +22,7 @@ import me.oreos.iam.entities.enums.EffectiveScopeEnum;
 import me.oreos.iam.entities.models.ResourcePermissionModel;
 import me.oreos.iam.entities.models.UserPermissionModel;
 import me.oreos.iam.repositories.ActionRepository;
+import me.oreos.iam.repositories.CustomRepository;
 import me.oreos.iam.repositories.PermissionRepository;
 import me.oreos.iam.repositories.ResourceRepository;
 import me.oreos.iam.repositories.UserGroupRepository;
@@ -28,6 +30,8 @@ import me.oreos.iam.repositories.UserRepository;
 import me.oreos.iam.services.AuthService;
 import me.oreos.iam.services.TokenProvider;
 import me.oreos.iam.services.TokenService;
+import me.oreos.iam.services.utils.Helper;
+import me.oreos.iam.types.PermissionPair;
 
 @Service
 public class AuthServiceImpl implements AuthService {
@@ -38,10 +42,12 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PermissionRepository permissionRepository;
     private final UserGroupRepository userGroupRepository;
+    private final CustomRepository customRepository;
 
     protected AuthServiceImpl(ActionRepository actionRepository, ResourceRepository resourceRepository,
             TokenService tokenService, TokenProvider tokenProvider, UserRepository userRepository,
-            PermissionRepository permissionRepository, UserGroupRepository userGroupRepository) {
+            PermissionRepository permissionRepository, UserGroupRepository userGroupRepository,
+            CustomRepository customRepository) {
         this.actionRepository = actionRepository;
         this.resourceRepository = resourceRepository;
         this.tokenService = tokenService;
@@ -49,6 +55,7 @@ public class AuthServiceImpl implements AuthService {
         this.userRepository = userRepository;
         this.permissionRepository = permissionRepository;
         this.userGroupRepository = userGroupRepository;
+        this.customRepository = customRepository;
     }
 
     @Override
@@ -119,8 +126,7 @@ public class AuthServiceImpl implements AuthService {
         Gson gson = new Gson();
         System.out.println(gson.toJson(permissionsMap));
 
-        ObjectMapper mapper = new ObjectMapper();
-        List<UserPermissionModel> permissions = mapper.convertValue(permissionsMap,
+        List<UserPermissionModel> permissions = Helper.mapToModel(permissionsMap,
                 new TypeReference<List<UserPermissionModel>>() {
                 });
 
@@ -135,8 +141,7 @@ public class AuthServiceImpl implements AuthService {
         System.out.println("Resource Permissions: ");
         System.out.println(gson.toJson(permissionsMap));
 
-        ObjectMapper mapper = new ObjectMapper();
-        List<ResourcePermissionModel> permissions = mapper.convertValue(permissionsMap,
+        List<ResourcePermissionModel> permissions = Helper.mapToModel(permissionsMap,
                 new TypeReference<List<ResourcePermissionModel>>() {
                 });
 
@@ -151,6 +156,7 @@ public class AuthServiceImpl implements AuthService {
             if (isActionAndResourceTypeValid(userPermission, actionCode, resource)) {
                 // Check scope requirements
                 if (checkPermissionScope(userPermission, user, resource)) {
+                    checkResourcePermissions(user, resourcePermissions);
                     return; // Access granted
                 }
             }
@@ -207,5 +213,39 @@ public class AuthServiceImpl implements AuthService {
 
         UserGroup userGroup = userGroupRepository.findByUserIdAndGroupId(user.getId(), groupId);
         return userGroup != null;
+    }
+
+    private void checkResourcePermissions(User user, List<ResourcePermissionModel> resourcePermissions)
+            throws BaseException {
+        if (resourcePermissions == null || resourcePermissions.isEmpty()) {
+            return; // No resource-specific permissions to check
+        }
+
+        // Collect all unique (actionId, resourceTypeId) pairs
+        List<PermissionPair> requiredPairs = resourcePermissions.stream()
+                .map(rp -> new PermissionPair(rp.getActionId(), rp.getResourceTypeId()))
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Fetch all user permissions for the required pairs
+        var userPerms = customRepository.findUserPermissions(user.getId(), requiredPairs);
+
+        // Check if all required resource permissions are satisfied
+        for (ResourcePermissionModel resourcePermission : resourcePermissions) {
+            boolean hasPermission = false;
+            for (UserPermissionModel perm : userPerms) {
+                if (perm.getActionId().equals(resourcePermission.getActionId())
+                        && perm.getResourceTypeId().equals(resourcePermission.getResourceTypeId())) {
+                    hasPermission = true;
+                    break;
+                }
+            }
+
+            if (!hasPermission) {
+                throw new BaseException(403,
+                        "Missing required permission for action ID: " + resourcePermission.getActionId()
+                                + " on resource type ID: " + resourcePermission.getResourceTypeId());
+            }
+        }
     }
 }
