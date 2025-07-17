@@ -34,7 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 @Where(clause = "is_active = true AND deleted_on IS NULL")
 @Entity
 @Table(name = "role_permissions")
-@TypeDef(name = "pgsql_enum", typeClass = me.oreos.iam.types.PostgreEffectiveScopeEnum.class)
+@TypeDef(name = "pgsql_enum", typeClass = me.oreos.iam.types.PostgresEffectiveScopeEnum.class)
 @AttributeOverride(name = "isActive", column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false))
 public class RolePermission extends MyBaseEntity<Integer> {
     @ManyToOne

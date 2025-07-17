@@ -3,7 +3,7 @@ package me.oreos.iam.types;
 import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
-import me.oreos.iam.entities.enums.EffectiveScopeEnum;
+import me.oreos.iam.entities.enums.EnforcementScopeEnum;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
@@ -13,9 +13,9 @@ import java.sql.Types;
 import java.util.Objects;
 import org.hibernate.HibernateException;
 
-public class PostgreEffectiveScopeEnum implements UserType {
+public class PostgresEnforcementScopeEnum implements UserType {
 
-    public PostgreEffectiveScopeEnum() {
+    public PostgresEnforcementScopeEnum() {
         // Default constructor required by Hibernate
     }
 
@@ -26,7 +26,7 @@ public class PostgreEffectiveScopeEnum implements UserType {
 
     @Override
     public Class returnedClass() {
-        return EffectiveScopeEnum.class;
+        return EnforcementScopeEnum.class;
     }
 
     @Override
@@ -43,7 +43,7 @@ public class PostgreEffectiveScopeEnum implements UserType {
     public Object nullSafeGet(ResultSet rs, String[] names, SharedSessionContractImplementor session, Object owner)
             throws HibernateException, SQLException {
         String value = rs.getString(names[0]);
-        return value == null ? null : EffectiveScopeEnum.valueOf(value);
+        return value == null ? null : EnforcementScopeEnum.valueOf(value);
     }
 
     @Override
@@ -52,7 +52,7 @@ public class PostgreEffectiveScopeEnum implements UserType {
         if (value == null) {
             st.setNull(index, Types.OTHER);
         } else {
-            st.setObject(index, ((EffectiveScopeEnum) value).name(), Types.OTHER);
+            st.setObject(index, ((EnforcementScopeEnum) value).name(), Types.OTHER);
         }
     }
 

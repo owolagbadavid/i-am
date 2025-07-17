@@ -39,7 +39,7 @@ import lombok.extern.slf4j.Slf4j;
     name = "isActive",
     column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
 )
-@TypeDef(name = "pgsql_enum", typeClass = me.oreos.iam.types.PostgreEffectiveScopeEnum.class)
+@TypeDef(name = "pgsql_enum", typeClass = me.oreos.iam.types.PostgresEffectiveScopeEnum.class)
 public class PolicyPermission extends MyBaseEntity<Integer> {
     @ManyToOne
     @JoinColumn(name = "policy_id", nullable = false)

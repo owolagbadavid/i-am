@@ -38,7 +38,7 @@ import lombok.extern.slf4j.Slf4j;
     name = "isActive",
     column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false)
 )
-@TypeDef(name = "pgsql_enum", typeClass = me.oreos.iam.types.PostgreEnforcementScopeEnum.class)
+@TypeDef(name = "pgsql_enum", typeClass = me.oreos.iam.types.PostgresEnforcementScopeEnum.class)
 public class ResourcePermission extends MyBaseEntity<Integer> {
     @ManyToOne
     @JoinColumn(name = "resource_id", nullable = false)
