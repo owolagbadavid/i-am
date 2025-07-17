@@ -5,9 +5,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.joda.time.DateTime;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.wakanda.framework.response.dto.ResponseDTO;
 import org.wakanda.framework.response.enums.ResponseType;
@@ -30,8 +28,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 @Slf4j
 @Tag(name = "Auth", description = "Operations related to authentication in the IAM system")
 @RestController
-@Controller
-@ResponseBody
 @RequestMapping(value = "/api/v1/auth"
 // , consumes = { "application/json", "application/org.wakanda.fw-v1+json" },
 // produces = { "application/json", "application/org.wakanda.fw-v1+json" }

@@ -2,9 +2,7 @@ package me.oreos.iam.controllers;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.wakanda.framework.controller.BaseQueryController;
 import org.wakanda.framework.response.dto.ResponseDTO;
@@ -19,12 +17,9 @@ import me.oreos.iam.services.utils.Helper;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Group", description = "Operations related to groups in the IAM system")
 @RestController
-@Controller
-@ResponseBody
 @RequestMapping(value = "/api/v1/groups"
 // , consumes = { "application/json", "application/org.wakanda.fw-v1+json" },
 // produces = { "application/json", "application/org.wakanda.fw-v1+json" }
@@ -41,7 +36,7 @@ public class GroupController extends BaseQueryController<me.oreos.iam.entities.G
 
     // add user to group
     @PostMapping("{id}/users/{userId}")
-    public ResponseEntity<ResponseDTO<Group>> postMethodName(@RequestBody String entity,
+    public ResponseEntity<ResponseDTO<Group>> addUserGroup(
             @PathVariable Integer id,
             @PathVariable Integer userId) {
 

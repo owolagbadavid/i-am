@@ -2,11 +2,9 @@ package me.oreos.iam.controllers;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.wakanda.framework.controller.BaseQueryController;
 import org.wakanda.framework.response.dto.ResponseDTO;
@@ -22,8 +20,6 @@ import me.oreos.iam.services.utils.Helper;
 
 @Tag(name = "Policy", description = "Operations related to policies in the IAM system")
 @RestController
-@Controller
-@ResponseBody
 @RequestMapping(value = "/api/v1/policies"
 // , consumes = { "application/json", "application/org.wakanda.fw-v1+json" },
 // produces = { "application/json", "application/org.wakanda.fw-v1+json" }
