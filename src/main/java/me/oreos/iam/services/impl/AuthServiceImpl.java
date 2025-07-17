@@ -1,6 +1,8 @@
 package me.oreos.iam.services.impl;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -15,6 +17,7 @@ import io.jsonwebtoken.Claims;
 import me.oreos.iam.Dtos.AuthorizationRequestDto;
 import me.oreos.iam.entities.Action;
 import me.oreos.iam.entities.Resource;
+import me.oreos.iam.entities.ResourceType;
 import me.oreos.iam.entities.User;
 import me.oreos.iam.entities.UserGroup;
 import me.oreos.iam.entities.enums.EffectiveScopeEnum;
@@ -24,6 +27,7 @@ import me.oreos.iam.repositories.ActionRepository;
 import me.oreos.iam.repositories.CustomRepository;
 import me.oreos.iam.repositories.PermissionRepository;
 import me.oreos.iam.repositories.ResourceRepository;
+import me.oreos.iam.repositories.ResourceTypeRepository;
 import me.oreos.iam.repositories.UserGroupRepository;
 import me.oreos.iam.repositories.UserRepository;
 import me.oreos.iam.services.AuthService;
@@ -41,12 +45,13 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PermissionRepository permissionRepository;
     private final UserGroupRepository userGroupRepository;
+    private final ResourceTypeRepository resourceTypeRepository;
     private final CustomRepository customRepository;
 
     protected AuthServiceImpl(ActionRepository actionRepository, ResourceRepository resourceRepository,
             TokenService tokenService, TokenProvider tokenProvider, UserRepository userRepository,
             PermissionRepository permissionRepository, UserGroupRepository userGroupRepository,
-            CustomRepository customRepository) {
+            CustomRepository customRepository, ResourceTypeRepository resourceTypeRepository) {
         this.actionRepository = actionRepository;
         this.resourceRepository = resourceRepository;
         this.tokenService = tokenService;
@@ -55,41 +60,45 @@ public class AuthServiceImpl implements AuthService {
         this.permissionRepository = permissionRepository;
         this.userGroupRepository = userGroupRepository;
         this.customRepository = customRepository;
+        this.resourceTypeRepository = resourceTypeRepository;
     }
 
     @Override
     public void authorize(AuthorizationRequestDto request) {
-        var pair = getActionAndResource(request.action, request.resourceId);
+        var pair = getActionAndResourceType(request.action, request.resourceType);
         var action = pair.getLeft();
-        var resource = pair.getRight();
+        var resourceType = pair.getRight();
+
+        Optional<Resource> resourceOpt = resourceRepository.findByResourceId(request.resourceId);
 
         var claims = validateToken(request.authToken);
 
-        var userPermissionPair = getUserPermissions(claims.getSubject(), action, resource);
+        var userPermissionPair = getUserPermissions(claims.getSubject(), action, resourceType);
         var userPermissions = userPermissionPair.getLeft();
         var user = userPermissionPair.getRight();
-        var resourcePermissions = getResourcePermissions(resource.getResourceId());
+        var resourcePermissions = getResourcePermissions(resourceOpt);
 
         // Authorization logic here
 
-        checkPermissions(userPermissions, user, action.getCode(), resource, resourcePermissions);
+        checkPermissions(userPermissions, user, action.getCode(), resourceType.getCode(), resourceOpt,
+                resourcePermissions);
     }
 
-    private Pair<Action, Resource> getActionAndResource(String actionCode, Integer resourceId) {
+    private Pair<Action, ResourceType> getActionAndResourceType(String actionCode, String resourceTypeCode) {
         var actionOpt = actionRepository.findByCode(actionCode);
         if (actionOpt.isEmpty()) {
             throw new BaseException(404, "Action not found: " + actionCode);
         }
 
-        var resourceOpt = resourceRepository.findByResourceId(resourceId);
-        if (resourceOpt.isEmpty()) {
-            throw new BaseException(404, "Resource not found: " + resourceId);
+        var resourceTypeOpt = resourceTypeRepository.findByCode(resourceTypeCode);
+        if (resourceTypeOpt.isEmpty()) {
+            throw new BaseException(404, "Resource type not found: " + resourceTypeCode);
         }
 
         var action = actionOpt.get();
-        var resource = resourceOpt.get();
+        var resourceType = resourceTypeOpt.get();
 
-        return Pair.of(action, resource);
+        return Pair.of(action, resourceType);
     }
 
     private Claims validateToken(String token) {
@@ -111,7 +120,8 @@ public class AuthServiceImpl implements AuthService {
         return claims;
     }
 
-    private Pair<List<UserPermissionModel>, User> getUserPermissions(String email, Action action, Resource resource) {
+    private Pair<List<UserPermissionModel>, User> getUserPermissions(String email, Action action,
+            ResourceType resourceType) {
         var userOpt = userRepository.findByEmail(email);
         if (userOpt.isEmpty()) {
             throw new BaseException(404, "User not found");
@@ -120,7 +130,7 @@ public class AuthServiceImpl implements AuthService {
         var user = userOpt.get();
 
         var permissionsMap = permissionRepository.findUserPermissions(user.getId(), action.getId(),
-                resource.getResourceType().getId());
+                resourceType.getId());
 
         Gson gson = new Gson();
         System.out.println(gson.toJson(permissionsMap));
@@ -132,8 +142,12 @@ public class AuthServiceImpl implements AuthService {
         return Pair.of(permissions, user);
     }
 
-    private List<ResourcePermissionModel> getResourcePermissions(Integer resourceId) {
+    private List<ResourcePermissionModel> getResourcePermissions(Optional<Resource> resourceOpt) {
+        if (resourceOpt.isEmpty()) {
+            return Collections.emptyList();
+        }
 
+        var resourceId = resourceOpt.get().getId();
         var permissionsMap = permissionRepository.findResourcePermissions(resourceId);
 
         Gson gson = new Gson();
@@ -148,13 +162,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private void checkPermissions(List<UserPermissionModel> userPermissions, User user, String actionCode,
-            Resource resource,
+            String resourceTypeCode, Optional<Resource> resourceOpt,
             List<ResourcePermissionModel> resourcePermissions) throws BaseException {
         for (UserPermissionModel userPermission : userPermissions) {
             // Check if action and resource type match
-            if (isActionAndResourceTypeValid(userPermission, actionCode, resource)) {
+            if (isActionAndResourceTypeValid(userPermission, actionCode, resourceTypeCode)) {
                 // Check scope requirements
-                if (checkPermissionScope(userPermission, user, resource)) {
+                if (checkPermissionScope(userPermission, user, resourceOpt)) {
                     checkResourcePermissions(user, resourcePermissions);
                     return; // Access granted
                 }
@@ -162,19 +176,28 @@ public class AuthServiceImpl implements AuthService {
         }
 
         throw new BaseException(403,
-                "Access denied for action: " + actionCode + " on resource: " + resource.getResourceId());
+                "Access denied for action: " + actionCode + " on resource type: " + resourceTypeCode
+                        + (resourceOpt.isEmpty()
+                                ? ""
+                                : " with resource ID: " + resourceOpt.get().getResourceId()));
 
     }
 
     private boolean isActionAndResourceTypeValid(UserPermissionModel userPermission, String actionCode,
-            Resource resource) {
+            String resourceTypeCode) {
         return userPermission.getAction().equals(actionCode)
-                && userPermission.getResourceTypeId().equals(resource.getResourceType().getId());
+                && userPermission.getResourceType().equals(resourceTypeCode);
     }
 
-    private boolean checkPermissionScope(UserPermissionModel userPermission, User user, Resource resource)
+    private boolean checkPermissionScope(UserPermissionModel userPermission, User user, Optional<Resource> resourceOpt)
             throws BaseException {
         EffectiveScopeEnum scope = userPermission.getEffectiveScope();
+
+        if (resourceOpt.isEmpty()) {
+            // If no resource is provided, only DEFAULT and ALL scopes are valid
+            return scope == EffectiveScopeEnum.DEFAULT || scope == EffectiveScopeEnum.ALL;
+        }
+        Resource resource = resourceOpt.get();
 
         switch (scope) {
             case DEFAULT:
