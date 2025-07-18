@@ -24,7 +24,7 @@ public class JwtService implements TokenProvider {
      * Generate JWT token with subject (e.g., user ID or email)
      */
     @Override
-	public String generateToken(String subject) {
+	public String generateToken(Object subject) {
         return generateToken(subject, null);
     }
 
@@ -32,13 +32,13 @@ public class JwtService implements TokenProvider {
      * Generate JWT token with subject and custom claims
      */
     @Override
-	public String generateToken(String subject, Map<String, Object> claims) {
+	public String generateToken(Object subject, Map<String, Object> claims) {
         long nowMillis = System.currentTimeMillis();
         Date now = new Date(nowMillis);
         Date expiry = new Date(nowMillis + EXPIRATION_MILLIS);
 
         JwtBuilder builder = Jwts.builder()
-                .setSubject(subject)
+                .setSubject(subject.toString())
                 .setIssuedAt(now)
                 .setExpiration(expiry)
                 .signWith(SECRET_KEY);

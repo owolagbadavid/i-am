@@ -9,12 +9,12 @@ public interface TokenProvider {
     /**
      * Generate JWT token with subject (e.g., user ID or email)
      */
-    String generateToken(String subject);
+    String generateToken(Object subject);
 
     /**
      * Generate JWT token with subject and custom claims
      */
-    String generateToken(String subject, Map<String, Object> claims);
+    String generateToken(Object subject, Map<String, Object> claims);
 
     /**
      * Validate JWT token and return claims if valid, null otherwise

@@ -71,7 +71,7 @@ public interface PermissionRepository extends BaseRepository<me.oreos.iam.entiti
       JOIN resources r ON rp.resource_id = r.id
       JOIN actions a ON perm.action_id = a.id
       JOIN resource_types rt ON perm.resource_type_id = rt.id
-      WHERE r.resource_id = :resourceId
+      WHERE r.id = :resourceId
       """, nativeQuery = true)
   List<Map<String, Object>> findResourcePermissions(@Param("resourceId") Integer resourceId);
 }

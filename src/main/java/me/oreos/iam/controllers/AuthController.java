@@ -2,7 +2,6 @@ package me.oreos.iam.controllers;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.joda.time.DateTime;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,11 +16,8 @@ import me.oreos.iam.services.UserService;
 import me.oreos.iam.services.utils.Helper;
 import me.oreos.iam.services.utils.PasswordHasher;
 import me.oreos.iam.Dtos.*;
-import me.oreos.iam.entities.Token;
 import me.oreos.iam.services.AuthService;
 import me.oreos.iam.services.SecurityService;
-import me.oreos.iam.services.TokenProvider;
-import me.oreos.iam.services.TokenService;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -34,19 +30,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 )
 public class AuthController {
 
-    private final TokenProvider tokenProvider;
     private final UserService userService;
-    private final TokenService tokenService;
     private final ResponseHelper<String> responseHelper;
     private final SecurityService securityService;
     private final AuthService authService;
 
-    public AuthController(UserService userService, TokenService tokenService, ResponseHelper<String> responseHelper,
-            TokenProvider tokenProvider, SecurityService securityService, AuthService authService) {
+    public AuthController(UserService userService, ResponseHelper<String> responseHelper,
+            SecurityService securityService, AuthService authService) {
         this.userService = userService;
-        this.tokenService = tokenService;
         this.responseHelper = responseHelper;
-        this.tokenProvider = tokenProvider;
         this.securityService = securityService;
         this.authService = authService;
     }
@@ -55,46 +47,10 @@ public class AuthController {
     public ResponseEntity<ResponseDTO<String>> login(@RequestBody LoginDto loginDto, HttpServletRequest request) {
 
         try {
-            var userOpt = userService.findByEmail(loginDto.emailAddress);
-
-            if (userOpt.isEmpty()) {
-                // throw new BaseException(401, "Inavlid credentials");
-                return this.responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR,
-                        "Invalid credentials", "");
-            }
-
-            String ipAddress = Helper.getClientIp(request);
-            String deviceInfo = request.getHeader("User-Agent");
-            String loginLocation = null;
-            try {
-                loginLocation = Helper.getGeoLocation(ipAddress).toString();
-            } catch (Exception e) {
-                log.error(e.getMessage());
-            }
-
-            var user = userOpt.get();
-
-            if (!PasswordHasher.verifyPassword(loginDto.password, user.getPasswordHash())) {
-                return this.responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR,
-                        "Invalid credentials", "");
-            }
-
-            var tokenString = tokenProvider.generateToken(user.getEmail());
-            var claims = tokenProvider.validateToken(tokenString);
-
-            var token = new Token();
-            token.setUser(user);
-            token.setToken(tokenString);
-            token.setExpiresAt(new DateTime(claims.getExpiration())); // 1 hour expiration
-            token.setIpAddress(ipAddress);
-            token.setDeviceInfo(deviceInfo);
-            token.setLoginLocation(loginLocation);
-
-            token = tokenService.save(token);
-            return responseHelper.ok("login successful", token.getToken());
+            var token = authService.loginHandler(loginDto, request);
+            return responseHelper.ok("login successful", token);
         } catch (Exception e) {
-            // log.error("Login failed: {}", e.getMessage());
-            return responseHelper.error(HttpStatus.UNAUTHORIZED, ResponseType.UNKNOWN_ERROR, "Invalid credentials", "");
+            return Helper.errorHandler(e);
         }
     }
 
@@ -121,9 +77,7 @@ public class AuthController {
 
             return responseHelper.ok("Password reset email sent", "");
         } catch (Exception e) {
-            // log.error("Forgot password failed: {}", e.getMessage());
-            return responseHelper.error(HttpStatus.INTERNAL_SERVER_ERROR, ResponseType.UNKNOWN_ERROR,
-                    "Unexpected error", "");
+            return Helper.errorHandler(e);
         }
     }
 
@@ -149,9 +103,7 @@ public class AuthController {
 
             return responseHelper.ok("Password reset successfully", "");
         } catch (Exception e) {
-            // log.error("Reset password failed: {}", e.getMessage());
-            return responseHelper.error(HttpStatus.INTERNAL_SERVER_ERROR, ResponseType.UNKNOWN_ERROR,
-                    "Unexpected error", "");
+            return Helper.errorHandler(e);
         }
     }
 

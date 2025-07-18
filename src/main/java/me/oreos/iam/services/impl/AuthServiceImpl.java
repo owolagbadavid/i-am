@@ -2,11 +2,16 @@ package me.oreos.iam.services.impl;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.lang3.tuple.Pair;
+import org.joda.time.DateTime;
 import org.joda.time.Instant;
+
 import org.springframework.stereotype.Service;
 import org.wakanda.framework.exception.BaseException;
 
@@ -14,10 +19,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.Gson;
 
 import io.jsonwebtoken.Claims;
+import lombok.extern.slf4j.Slf4j;
 import me.oreos.iam.Dtos.AuthorizationRequestDto;
+import me.oreos.iam.Dtos.LoginDto;
 import me.oreos.iam.entities.Action;
 import me.oreos.iam.entities.Resource;
 import me.oreos.iam.entities.ResourceType;
+import me.oreos.iam.entities.Token;
 import me.oreos.iam.entities.User;
 import me.oreos.iam.entities.UserGroup;
 import me.oreos.iam.entities.enums.EffectiveScopeEnum;
@@ -33,9 +41,12 @@ import me.oreos.iam.repositories.UserRepository;
 import me.oreos.iam.services.AuthService;
 import me.oreos.iam.services.TokenProvider;
 import me.oreos.iam.services.TokenService;
+import me.oreos.iam.services.UserService;
 import me.oreos.iam.services.utils.Helper;
+import me.oreos.iam.services.utils.PasswordHasher;
 import me.oreos.iam.types.PermissionPair;
 
+@Slf4j
 @Service
 public class AuthServiceImpl implements AuthService {
     private final ActionRepository actionRepository;
@@ -47,11 +58,13 @@ public class AuthServiceImpl implements AuthService {
     private final UserGroupRepository userGroupRepository;
     private final ResourceTypeRepository resourceTypeRepository;
     private final CustomRepository customRepository;
+    private final UserService userService;
 
     protected AuthServiceImpl(ActionRepository actionRepository, ResourceRepository resourceRepository,
             TokenService tokenService, TokenProvider tokenProvider, UserRepository userRepository,
             PermissionRepository permissionRepository, UserGroupRepository userGroupRepository,
-            CustomRepository customRepository, ResourceTypeRepository resourceTypeRepository) {
+            CustomRepository customRepository, ResourceTypeRepository resourceTypeRepository,
+            UserService userService) {
         this.actionRepository = actionRepository;
         this.resourceRepository = resourceRepository;
         this.tokenService = tokenService;
@@ -61,6 +74,50 @@ public class AuthServiceImpl implements AuthService {
         this.userGroupRepository = userGroupRepository;
         this.customRepository = customRepository;
         this.resourceTypeRepository = resourceTypeRepository;
+        this.userService = userService;
+    }
+
+    @Override
+    public String loginHandler(LoginDto loginDto, HttpServletRequest request) throws Exception {
+        var userOpt = userService.findByEmail(loginDto.emailAddress);
+
+        if (userOpt.isEmpty()) {
+            throw new BaseException(401, "Inavlid credentials");
+        }
+
+        String ipAddress = Helper.getClientIp(request);
+        String deviceInfo = request.getHeader("User-Agent");
+        String loginLocation = null;
+        try {
+            loginLocation = Helper.getGeoLocation(ipAddress).toString();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+        }
+
+        var user = userOpt.get();
+
+        if (!PasswordHasher.verifyPassword(loginDto.password, user.getPasswordHash())) {
+            throw new BaseException(401, "Invalid credentials");
+        }
+
+        Map<String, Object> additionalClaims = Map.of(
+                "ipAddress", ipAddress,
+                "email", user.getEmail(),
+                "username", user.getUsername());
+
+        var tokenString = tokenProvider.generateToken(user.getId(), additionalClaims);
+        var claims = tokenProvider.validateToken(tokenString);
+
+        var token = new Token();
+        token.setUser(user);
+        token.setToken(tokenString);
+        token.setExpiresAt(new DateTime(claims.getExpiration())); // 1 hour expiration
+        token.setIpAddress(ipAddress);
+        token.setDeviceInfo(deviceInfo);
+        token.setLoginLocation(loginLocation);
+
+        token = tokenService.save(token);
+        return token.getToken();
     }
 
     @Override
@@ -73,7 +130,15 @@ public class AuthServiceImpl implements AuthService {
 
         var claims = validateToken(request.authToken);
 
-        var userPermissionPair = getUserPermissions(claims.getSubject(), action, resourceType);
+        // try parse claims.getSubject() as integer
+        Integer userId = null;
+        try {
+            userId = Integer.parseInt(claims.getSubject());
+        } catch (NumberFormatException e) {
+            throw new BaseException(401, "Invalid token");
+        }
+
+        var userPermissionPair = getUserPermissions(userId, action, resourceType);
         var userPermissions = userPermissionPair.getLeft();
         var user = userPermissionPair.getRight();
         var resourcePermissions = getResourcePermissions(resourceOpt);
@@ -120,9 +185,9 @@ public class AuthServiceImpl implements AuthService {
         return claims;
     }
 
-    private Pair<List<UserPermissionModel>, User> getUserPermissions(String email, Action action,
+    private Pair<List<UserPermissionModel>, User> getUserPermissions(Integer userId, Action action,
             ResourceType resourceType) {
-        var userOpt = userRepository.findByEmail(email);
+        var userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             throw new BaseException(404, "User not found");
         }
