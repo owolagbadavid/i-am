@@ -2,7 +2,7 @@ package me.oreos.iam.services.impl;
 
 import java.util.Optional;
 
-import javax.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import org.springframework.stereotype.Component;
 import org.wakanda.framework.exception.BaseException;

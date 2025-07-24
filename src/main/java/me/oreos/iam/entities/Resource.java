@@ -6,6 +6,7 @@ import javax.persistence.Entity;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 import org.hibernate.annotations.Where;
 
@@ -26,10 +27,12 @@ import lombok.extern.slf4j.Slf4j;
 @ToString
 @Where(clause = "is_active = true AND deleted_on IS NULL")
 @Entity
-@Table(name = "resources")
+@Table(name = "resources", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "resource_id", "resource_type_id" })
+})
 @AttributeOverride(name = "isActive", column = @Column(name = "is_active", columnDefinition = "BOOLEAN DEFAULT TRUE", nullable = false))
 public class Resource extends MyBaseEntity<Integer> {
-    @Column(name = "resource_id", nullable = false, unique = true)
+    @Column(name = "resource_id", nullable = false)
     private Integer resourceId;
 
     @ManyToOne

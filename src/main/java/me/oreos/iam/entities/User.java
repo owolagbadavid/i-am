@@ -8,6 +8,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
+import javax.validation.constraints.Email;
 import javax.validation.constraints.NotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -44,6 +45,7 @@ public class User extends MyBaseEntity<Integer> {
     private String username;
 
     @NotBlank(message = "Email cannot be blank")
+    @Email(message = "Email should be valid")
     @Column(name = "email", nullable = false, unique = true)
     private String email;
 

@@ -22,7 +22,7 @@ import io.swagger.v3.oas.annotations.info.Info;
     )
 )
 @EntityScan(basePackages = { "me.oreos.iam.entities", "org.wakanda.framework.entity" })
-@EnableJpaRepositories
+@EnableJpaRepositories(basePackages = "me.oreos.iam.repositories")
 @EnableTransactionManagement
 public class IAMApplication {
     public static void main(String[] args) {

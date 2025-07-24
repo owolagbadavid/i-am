@@ -11,17 +11,22 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
-
+import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.wakanda.framework.exception.BaseException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.gson.Gson;
 
 import io.jsonwebtoken.Claims;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.oreos.iam.Dtos.AuthorizationRequestDto;
+import me.oreos.iam.Dtos.ForgotPasswordDto;
 import me.oreos.iam.Dtos.LoginDto;
+import me.oreos.iam.Dtos.OnboardAdminDto;
+import me.oreos.iam.Dtos.ResetPasswordDto;
 import me.oreos.iam.entities.Action;
 import me.oreos.iam.entities.Resource;
 import me.oreos.iam.entities.ResourceType;
@@ -39,6 +44,8 @@ import me.oreos.iam.repositories.ResourceTypeRepository;
 import me.oreos.iam.repositories.UserGroupRepository;
 import me.oreos.iam.repositories.UserRepository;
 import me.oreos.iam.services.AuthService;
+import me.oreos.iam.services.MailService;
+import me.oreos.iam.services.SecurityService;
 import me.oreos.iam.services.TokenProvider;
 import me.oreos.iam.services.TokenService;
 import me.oreos.iam.services.UserService;
@@ -48,6 +55,8 @@ import me.oreos.iam.types.PermissionPair;
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
+@Transactional
 public class AuthServiceImpl implements AuthService {
     private final ActionRepository actionRepository;
     private final ResourceRepository resourceRepository;
@@ -59,23 +68,9 @@ public class AuthServiceImpl implements AuthService {
     private final ResourceTypeRepository resourceTypeRepository;
     private final CustomRepository customRepository;
     private final UserService userService;
-
-    protected AuthServiceImpl(ActionRepository actionRepository, ResourceRepository resourceRepository,
-            TokenService tokenService, TokenProvider tokenProvider, UserRepository userRepository,
-            PermissionRepository permissionRepository, UserGroupRepository userGroupRepository,
-            CustomRepository customRepository, ResourceTypeRepository resourceTypeRepository,
-            UserService userService) {
-        this.actionRepository = actionRepository;
-        this.resourceRepository = resourceRepository;
-        this.tokenService = tokenService;
-        this.tokenProvider = tokenProvider;
-        this.userRepository = userRepository;
-        this.permissionRepository = permissionRepository;
-        this.userGroupRepository = userGroupRepository;
-        this.customRepository = customRepository;
-        this.resourceTypeRepository = resourceTypeRepository;
-        this.userService = userService;
-    }
+    private final SecurityService securityService;
+    private final MailService mailService;
+    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     public String loginHandler(LoginDto loginDto, HttpServletRequest request) throws Exception {
@@ -121,12 +116,59 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public void forgotPassword(ForgotPasswordDto dto) throws Exception {
+        var userOpt = userService.findByEmail(dto.emailAddress);
+
+        // Always return success to avoid user enumeration
+        if (userOpt.isEmpty()) {
+            return;
+        }
+
+        var user = userOpt.get();
+        var otp = securityService.generateOtp(user.getEmail());
+
+        mailService.to(user.getEmail())
+                .subject("Password Reset Request")
+                .body("Your OTP for password reset is: " + otp)
+                .send();
+
+        // CompletableFuture.runAsync(() -> {
+        // try {
+        // mailService.send();
+        // } catch (Exception e) {
+        // log.error("Error sending email", e);
+        // }
+        // });
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordDto dto) throws Exception {
+        if (!securityService.verifyOtp(dto.emailAddress, dto.otp)) {
+            throw new BaseException(401, "Invalid reset OTP");
+        }
+
+        var userOpt = userService.findByEmail(dto.emailAddress);
+
+        if (userOpt.isEmpty()) {
+            throw new BaseException(404, "User not found");
+        }
+
+        var user = userOpt.get();
+        user.setPasswordHash(PasswordHasher.hashPassword(dto.newPassword));
+
+        userService.save(user);
+
+        return;
+    }
+
+    @Override
     public void authorize(AuthorizationRequestDto request) {
         var pair = getActionAndResourceType(request.action, request.resourceType);
         var action = pair.getLeft();
         var resourceType = pair.getRight();
 
-        Optional<Resource> resourceOpt = resourceRepository.findByResourceId(request.resourceId);
+        Optional<Resource> resourceOpt = resourceRepository.findByResourceIdAndResourceTypeId(request.resourceId,
+                resourceType.getId());
 
         var claims = validateToken(request.authToken);
 
@@ -330,9 +372,33 @@ public class AuthServiceImpl implements AuthService {
 
             if (!hasPermission) {
                 throw new BaseException(403,
-                        "Missing required permission for action ID: " + resourcePermission.getActionId()
-                                + " on resource type ID: " + resourcePermission.getResourceTypeId());
+                        "Missing required permission for action " + resourcePermission.getAction()
+                                + " on resource type: " + resourcePermission.getResourceType());
             }
         }
+    }
+
+    public void onboardAdmin(OnboardAdminDto dto) {
+        try {
+            // check if user already exists
+            if (userRepository.findOne((root, query, cb) -> cb.conjunction()).isPresent()) {
+                throw new BaseException(400, "User already exists");
+            }
+
+            // create admin user
+            User adminUser = new User();
+            adminUser.setEmail(dto.getEmail());
+            adminUser.setUsername(dto.getUsername());
+            adminUser.setPasswordHash(PasswordHasher.hashPassword(dto.getPassword()));
+
+            userRepository.save(adminUser);
+
+            throw new BaseException(500, "Error during onboarding admin");
+
+        } catch (Exception e) {
+            log.error("Error during onboarding admin", e);
+            throw new BaseException(500, "Error during onboarding admin: " + e.getMessage());
+        }
+
     }
 }
