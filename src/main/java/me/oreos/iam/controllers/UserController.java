@@ -12,6 +12,7 @@ import org.wakanda.framework.response.enums.ResponseType;
 import org.wakanda.framework.response.helper.ResponseHelper;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
+import me.oreos.iam.annotation.CustomAuthorize;
 import me.oreos.iam.entities.User;
 import me.oreos.iam.services.UserService;
 import me.oreos.iam.services.utils.Helper;
@@ -22,6 +23,7 @@ import me.oreos.iam.services.utils.Helper;
 // , consumes = { "application/json", "application/org.wakanda.fw-v1+json" }
 // ,produces = { "application/json", "application/org.wakanda.fw-v1+json" }
 )
+@CustomAuthorize(action = "read", resourceType = "user")
 public class UserController extends BaseQueryController<me.oreos.iam.entities.User, Integer> {
     private final UserService userService;
     private final ResponseHelper<me.oreos.iam.entities.User> responseHelper;
