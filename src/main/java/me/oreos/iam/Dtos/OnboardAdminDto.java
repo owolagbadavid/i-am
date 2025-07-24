@@ -8,6 +8,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class OnboardAdminDto {
+    public boolean init = true;
     private String username;
     private String password;
 

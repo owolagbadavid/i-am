@@ -13,7 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import me.oreos.iam.services.utils.Helper;
 import me.oreos.iam.Dtos.*;
-import me.oreos.iam.services.AuthService;
+import me.oreos.iam.services.OnboardingService;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -27,12 +28,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 @RequiredArgsConstructor
 public class OnboardingController {
     private final ResponseHelper<String> responseHelper;
-    private final AuthService authService;
+    private final OnboardingService onboardingService;
 
     @PostMapping("/admin")
     public ResponseEntity<ResponseDTO<String>> onboardAdmin(@Valid @RequestBody OnboardAdminDto dto) {
         try {
-            authService.onboardAdmin(dto);
+            onboardingService.onboardAdmin(dto);
             return responseHelper.ok("Admin onboarded successfully", "");
         } catch (Exception e) {
             return Helper.errorHandler(e);

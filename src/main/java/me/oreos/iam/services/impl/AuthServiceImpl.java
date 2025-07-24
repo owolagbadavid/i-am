@@ -11,7 +11,6 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang3.tuple.Pair;
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.wakanda.framework.exception.BaseException;
@@ -25,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import me.oreos.iam.Dtos.AuthorizationRequestDto;
 import me.oreos.iam.Dtos.ForgotPasswordDto;
 import me.oreos.iam.Dtos.LoginDto;
-import me.oreos.iam.Dtos.OnboardAdminDto;
 import me.oreos.iam.Dtos.ResetPasswordDto;
 import me.oreos.iam.entities.Action;
 import me.oreos.iam.entities.Resource;
@@ -70,7 +68,6 @@ public class AuthServiceImpl implements AuthService {
     private final UserService userService;
     private final SecurityService securityService;
     private final MailService mailService;
-    private final RedisTemplate<String, String> redisTemplate;
 
     @Override
     public String loginHandler(LoginDto loginDto, HttpServletRequest request) throws Exception {
@@ -376,29 +373,5 @@ public class AuthServiceImpl implements AuthService {
                                 + " on resource type: " + resourcePermission.getResourceType());
             }
         }
-    }
-
-    public void onboardAdmin(OnboardAdminDto dto) {
-        try {
-            // check if user already exists
-            if (userRepository.findOne((root, query, cb) -> cb.conjunction()).isPresent()) {
-                throw new BaseException(400, "User already exists");
-            }
-
-            // create admin user
-            User adminUser = new User();
-            adminUser.setEmail(dto.getEmail());
-            adminUser.setUsername(dto.getUsername());
-            adminUser.setPasswordHash(PasswordHasher.hashPassword(dto.getPassword()));
-
-            userRepository.save(adminUser);
-
-            throw new BaseException(500, "Error during onboarding admin");
-
-        } catch (Exception e) {
-            log.error("Error during onboarding admin", e);
-            throw new BaseException(500, "Error during onboarding admin: " + e.getMessage());
-        }
-
     }
 }

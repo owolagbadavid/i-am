@@ -8,8 +8,11 @@ import java.net.URI;
 import java.util.Map;
 
 import org.json.JSONObject;
+import org.springframework.core.env.Environment;
+import org.springframework.core.env.Profiles;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Component;
 import org.wakanda.framework.exception.BaseException;
 import org.wakanda.framework.response.dto.ResponseDTO;
 import org.wakanda.framework.response.enums.ResponseType;
@@ -18,7 +21,14 @@ import org.wakanda.framework.response.helper.ResponseHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+@Component
 public final class Helper {
+    private static Environment environment;
+
+    public Helper(Environment env) {
+        Helper.environment = env;
+    }
+
     public static String getClientIp(javax.servlet.http.HttpServletRequest request) {
         String ip = request.getHeader("X-Forwarded-For");
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
@@ -118,4 +128,25 @@ public final class Helper {
         return mapper.convertValue(value, typeRef);
     }
 
+    public static String generateRandomCode() {
+        return generateRandomCode(6); // default length
+    }
+
+    public static String generateRandomCode(int length) {
+        if (!environment.acceptsProfiles(Profiles.of("prod"))) {
+            StringBuilder code = new StringBuilder();
+            for (int i = 0; i < length; i++) {
+                code.append(i % 10);
+            }
+            return code.toString();
+        } else {
+            StringBuilder code = new StringBuilder();
+            String characters = "0123456789";
+            for (int i = 0; i < length; i++) {
+                int index = (int) (Math.random() * characters.length());
+                code.append(characters.charAt(index));
+            }
+            return code.toString();
+        }
+    }
 }
